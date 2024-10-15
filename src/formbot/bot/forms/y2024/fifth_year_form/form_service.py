@@ -6,12 +6,12 @@ TABLE_NAME = "students"
 CREATE_TABLE_QUERY = f"""
 CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    department TEXT,
-    stream TEXT,
-    section TEXT,
     name TEXT,
     phone TEXT,
-    email TEXT
+    email TEXT,
+    department TEXT,
+    stream TEXT,
+    section TEXT
 )
 """
 

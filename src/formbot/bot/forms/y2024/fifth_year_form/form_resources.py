@@ -29,29 +29,11 @@ DEPARTMENTS: list[Department] = [
     {
         "name": "School of Information Technology and Engineering",
         "abbreviation": "SITE",
-        "streams": [
-            {
-                "name": "Software Engineering",
-                "abbreviation": "SE",
-                "sections": ["1", "2"],
-            },
-            {
-                "name": "Artificial Intelligence",
-                "abbreviation": "AI",
-                "sections": ["1"],
-            },
-            {
-                "name": "Cyber Security",
-                "abbreviation": "CS",
-                "sections": ["1"],
-            },
-            {
-                "name": "Information Technology",
-                "abbreviation": "IT",
-                "sections": ["1"],
-            },
-        ],
-    }
+    },
+    {"name": "School of Electrical and Computer Engineering", "abbreviation": "SECE"},
+    {"name": "School of Chemical and Bio Engineering", "abbreviation": "SCBE"},
+    {"name": "School of Civil and Environmentall Engineering", "abbreviation": "SCEE"},
+    {"name": "School of Mechanical and Industrial Engineering", "abbreviation": "SMIE"},
 ]
 
 

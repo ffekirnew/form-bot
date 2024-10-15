@@ -34,7 +34,6 @@ class Bot:
 
     def _setup_filters(self) -> None:
         self._bot.add_custom_filter(asyncio_filters.IsDigitFilter())
-        self._bot.add_custom_filter(asyncio_filters.IsEmailFilter())
         self._bot.add_custom_filter(asyncio_filters.TextMatchFilter())
         self._bot.add_custom_filter(asyncio_filters.StateFilter(self._bot))
 

@@ -15,8 +15,15 @@ def register_keyboard() -> ReplyKeyboardMarkup:
     return keyboard
 
 
-def make_row_keyboard(items: list[str]) -> ReplyKeyboardMarkup:
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+def make_row_keyboard(
+    items: list[str],
+    items_per_row: int | None = None,
+) -> ReplyKeyboardMarkup:
+    keyboard = ReplyKeyboardMarkup(
+        resize_keyboard=True,
+        one_time_keyboard=True,
+        row_width=items_per_row if items_per_row else 3,
+    )
 
     keyboard.add(*[KeyboardButton(text=item) for item in items])
 
