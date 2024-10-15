@@ -7,23 +7,31 @@ from formbot.bot.forms.y2024.fifth_year_form.form_resources import (
     get_department_stream_names,
     get_sections,
 )
+from formbot.bot.forms.y2024.fifth_year_form.form_service import FormService
 from formbot.bot.forms.y2024.fifth_year_form.form_states import FormStates
 from formbot.bot.utils import BotState, FormHandler
+from formbot.bot.utils.generic_helpers import (
+    is_valid_email,
+    is_valid_ethiopian_phone_number,
+    standardize_phone_number,
+)
 from formbot.bot.utils.keyboards import make_row_keyboard, make_share_contact_keyboard
 
-UNIVERSITY_DEPARTMENT_PROMPT = "Please share your university department."
-UNIVERSITY_DEPARTMENT_STREAM_PROMPT = "Please share your university department stream."
-UNIVERSITY_DEPARTMANET_SECTION_PROMPT = (
-    "Please share your university department section."
-)
+UNIVERSITY_DEPARTMENT_PROMPT = "Please select your university department."
+UNIVERSITY_DEPARTMENT_STREAM_PROMPT = "Please select your stream."
+UNIVERSITY_DEPARTMANET_SECTION_PROMPT = "Please share your section."
 FULL_NAME_PROMPT = "Please share your full name."
 PHONE_NUMBER_PROMPT = "Please share your phone number."
+PHONE_NUMBER_INVALID_PROMPT = "Invalid phone number. Please share a valid phone number. Should start with one of: +251, 251, 07, 09. Or you can share your contact."
 EMAIL_PROMPT = "Please share your email."
+EMAIL_INVALID_PROMPT = "Invalid email. Please share a valid email."
+FINAL_MESSAGE = "Thank you for sharing your information."
 
 
 class FifthYear2024FormHandler(FormHandler):
     def __init__(self, bot: AsyncTeleBot, form_name: str) -> None:
         super().__init__(bot, form_name)
+        self._service = FormService()
 
     def start(self) -> None:
         return self.register()
@@ -49,6 +57,10 @@ class FifthYear2024FormHandler(FormHandler):
         self.register_handler(
             self._name,
             state=FormStates.waiting_for_name,
+        )
+        self.register_handler(
+            self._phone,
+            state=FormStates.waiting_for_phone_number,
         )
         self.register_handler(
             self._phone,
@@ -138,21 +150,36 @@ class FifthYear2024FormHandler(FormHandler):
     async def _phone(self, message: Message, state: StateContext) -> None:
         cid = message.chat.id
 
-        assert message.contact is not None
-        phone = message.contact.phone_number
+        phone = None
+        if message.contact is not None:
+            phone = message.contact.phone_number
 
-        await state.add_data(phone_number=phone)
+        if phone is None and is_valid_ethiopian_phone_number(message.text):  # type: ignore
+            phone = message.text
 
-        await state.set(FormStates.waiting_for_email)
-        await self.send_message(
-            cid,
-            EMAIL_PROMPT,
-        )
+        if phone is not None:
+            await state.add_data(phone_number=standardize_phone_number(phone))
+
+            await state.set(FormStates.waiting_for_email)
+            await self.send_message(
+                cid,
+                EMAIL_PROMPT,
+            )
+        else:
+            await self.send_message(
+                cid,
+                PHONE_NUMBER_INVALID_PROMPT,
+                reply_markup=make_share_contact_keyboard("Share your contact"),
+            )
 
     async def _email(self, message: Message, state: StateContext) -> None:
         cid, email = message.chat.id, message.text
 
         assert email is not None
+
+        if not is_valid_email(email):
+            await self.send_message(cid, EMAIL_INVALID_PROMPT)
+            return
 
         async with state.data() as data:  # type: ignore
             self.finalize(
@@ -168,8 +195,8 @@ class FifthYear2024FormHandler(FormHandler):
             await state.set(BotState.init)
             await self.send_message(
                 cid,
-                "Thank you for sharing your information.",
+                FINAL_MESSAGE,
             )
 
     def finalize(self, student: Student) -> None:
-        print(student)
+        self._service.insert(student)
