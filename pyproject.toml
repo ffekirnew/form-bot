@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "form-bot"
+version = "0.1.0"
+description = ""
+authors = ["ffekirnew <ffekirnew0808@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+aiohttp = "^3.10.10"
+pytelegrambotapi = "^4.23.0"
+aiofiles = "^24.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
