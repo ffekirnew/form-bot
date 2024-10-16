@@ -8,7 +8,7 @@ async def main():
     load_dotenv(override=True)
     config = Settings()  # pyright: ignore
 
-    bot = Bot(config)
+    bot = Bot(config, webhook=True)
     await bot.start()
 
 
