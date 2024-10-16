@@ -1,3 +1,3 @@
-from formbot.app import App
+from formbot.bot import Bot
 
-__all__ = ["App"]
+__all__ = ["Bot"]

@@ -3,14 +3,15 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_storage import StatePickleStorage
 from telebot.states.asyncio.middleware import StateMiddleware
 
+from config import Settings
 from formbot.bot.forms.y2024.fifth_year_form import FifthYear2024FormHandler
 from formbot.bot.init_handler import InitHandler
 
 
 class Bot:
-    def __init__(self) -> None:
+    def __init__(self, config: Settings) -> None:
         self._bot = AsyncTeleBot(
-            "7340398878:AAGarQcbjKdGayZogWAeXMggg2PEtTH8x2s",
+            config.bot_token.get_secret_value(),
             state_storage=StatePickleStorage(".botstate/states.pkl"),
         )
 
@@ -20,6 +21,7 @@ class Bot:
         self._init_handler = InitHandler(
             self._bot,
             [handler.form_name for handler in self._form_handlers],
+            config.bot_name,
         )
 
     async def start(self) -> None:

@@ -1,10 +1,15 @@
-from formbot import App
+from dotenv import load_dotenv
+
+from config import Settings
+from formbot import Bot
 
 
 async def main():
-    app = App()
+    load_dotenv(override=True)
+    config = Settings()  # pyright: ignore
 
-    await app.start()
+    bot = Bot(config)
+    await bot.start()
 
 
 if __name__ == "__main__":
