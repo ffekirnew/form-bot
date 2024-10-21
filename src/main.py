@@ -3,12 +3,12 @@ from dotenv import load_dotenv
 from config import Settings
 from formbot import Bot
 
+load_dotenv(override=True)
+config = Settings()  # type: ignore
+
 
 async def main():
-    load_dotenv(override=True)
-    config = Settings()  # pyright: ignore
-
-    bot = Bot(config, webhook=True)
+    bot = Bot(config)
     await bot.start()
 
 

@@ -2,6 +2,7 @@ from telebot import asyncio_filters
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_storage import StatePickleStorage
 from telebot.states.asyncio.middleware import StateMiddleware
+from telebot.types import Update
 
 from config import Settings
 from formbot.bot.forms.y2024.fifth_year_form import FifthYear2024FormHandler
@@ -9,9 +10,8 @@ from formbot.bot.init_handler import InitHandler
 
 
 class Bot:
-    def __init__(self, config: Settings, webhook: bool = False) -> None:
+    def __init__(self, config: Settings) -> None:
         self._config = config
-        self._webhook = webhook
         self._bot = AsyncTeleBot(
             self._config.bot_token.get_secret_value(),
             state_storage=StatePickleStorage(".botstate/states.pkl"),
@@ -26,6 +26,10 @@ class Bot:
             config.bot_name,
         )
 
+    @property
+    def token(self) -> str:
+        return self._bot.token
+
     async def start(self) -> None:
         for handler in self._form_handlers:
             handler.start()
@@ -34,11 +38,13 @@ class Bot:
         self._setup_filters()
         self._setup_middleware()
 
-        if self._webhook:
-            await self._bot.set_webhook(self._config.webhook_url, max_connections=1)
-            await self._bot.run_webhooks()
-        else:
+        if self._config.env == "prod":
             await self._bot.remove_webhook()
+            await self._bot.set_webhook(self._config.webhook_url)
+            await self._bot.run_webhooks()
+
+        else:
+            await self._bot.delete_webhook()
             await self._bot.polling()
 
     def _setup_filters(self) -> None:
@@ -48,3 +54,6 @@ class Bot:
 
     def _setup_middleware(self) -> None:
         self._bot.setup_middleware(StateMiddleware(self._bot))
+
+    async def process_new_updates(self, updates: list[Update]) -> None:
+        await self._bot.process_new_updates(updates)

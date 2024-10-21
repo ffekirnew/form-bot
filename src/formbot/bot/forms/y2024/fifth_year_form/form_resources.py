@@ -34,6 +34,7 @@ DEPARTMENTS: list[Department] = [
     {"name": "School of Chemical and Bio Engineering", "abbreviation": "SCBE"},
     {"name": "School of Civil and Environmentall Engineering", "abbreviation": "SCEE"},
     {"name": "School of Mechanical and Industrial Engineering", "abbreviation": "SMIE"},
+    {"name": "School of Center of Biomedical Engineering", "abbreviation": "SCBE"},
 ]
 
 
