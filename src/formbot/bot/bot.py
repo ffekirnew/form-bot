@@ -1,7 +1,6 @@
-from telebot import asyncio_filters
-from telebot.async_telebot import AsyncTeleBot
-from telebot.asyncio_storage import StatePickleStorage
-from telebot.states.asyncio.middleware import StateMiddleware
+from telebot import TeleBot, custom_filters
+from telebot.states.sync.middleware import StateMiddleware
+from telebot.storage import StatePickleStorage
 from telebot.types import Update
 
 from config import Settings
@@ -12,9 +11,10 @@ from formbot.bot.init_handler import InitHandler
 class Bot:
     def __init__(self, config: Settings) -> None:
         self._config = config
-        self._bot = AsyncTeleBot(
+        self._bot = TeleBot(
             self._config.bot_token.get_secret_value(),
-            state_storage=StatePickleStorage(".botstate/states.pkl"),
+            state_storage=StatePickleStorage("./.botstates/state.pkl"),
+            use_class_middlewares=True,
         )
 
         self._form_handlers = [
@@ -30,30 +30,30 @@ class Bot:
     def token(self) -> str:
         return self._bot.token
 
-    async def start(self) -> None:
+    def start(self) -> None:
         for handler in self._form_handlers:
             handler.start()
         self._init_handler.start()
 
         self._setup_filters()
-        self._setup_middleware()
+        self._setup_middlewares()
 
         if self._config.env == "prod":
-            await self._bot.remove_webhook()
-            await self._bot.set_webhook(self._config.webhook_url)
-            await self._bot.run_webhooks()
+            self._bot.remove_webhook()
+            self._bot.set_webhook(self._config.webhook_url)
+            self._bot.run_webhooks()
 
         else:
-            await self._bot.delete_webhook()
-            await self._bot.polling()
+            self._bot.delete_webhook()
+            self._bot.polling()
 
     def _setup_filters(self) -> None:
-        self._bot.add_custom_filter(asyncio_filters.IsDigitFilter())
-        self._bot.add_custom_filter(asyncio_filters.TextMatchFilter())
-        self._bot.add_custom_filter(asyncio_filters.StateFilter(self._bot))
+        self._bot.add_custom_filter(custom_filters.StateFilter(self._bot))
+        self._bot.add_custom_filter(custom_filters.IsDigitFilter())
+        self._bot.add_custom_filter(custom_filters.TextMatchFilter())
 
-    def _setup_middleware(self) -> None:
+    def _setup_middlewares(self) -> None:
         self._bot.setup_middleware(StateMiddleware(self._bot))
 
-    async def process_new_updates(self, updates: list[Update]) -> None:
-        await self._bot.process_new_updates(updates)
+    def process_new_updates(self, updates: list[Update]) -> None:
+        self._bot.process_new_updates(updates)

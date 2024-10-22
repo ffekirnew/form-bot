@@ -8,4 +8,5 @@ class FormStates(StatesGroup):
     waiting_for_university_department_section = State()
     waiting_for_name = State()
     waiting_for_phone_number = State()
+    waiting_for_service_department = State()
     waiting_for_email = State()

@@ -1,11 +1,11 @@
-from telebot.states.asyncio.context import AsyncTeleBot, StateContext
+from telebot import TeleBot
+from telebot.states.sync.context import StateContext
 from telebot.types import Message
 
 from formbot.bot.forms.y2024.fifth_year_form.form_resources import (
+    SERVICE_DEPARTMENTS,
     Student,
     get_department_names,
-    get_department_stream_names,
-    get_sections,
 )
 from formbot.bot.forms.y2024.fifth_year_form.form_service import FormService
 from formbot.bot.forms.y2024.fifth_year_form.form_states import FormStates
@@ -15,7 +15,12 @@ from formbot.bot.utils.generic_helpers import (
     is_valid_ethiopian_phone_number,
     standardize_phone_number,
 )
-from formbot.bot.utils.keyboards import make_row_keyboard, make_share_contact_keyboard
+from formbot.bot.utils.keyboards import (
+    make_column_keyboard,
+    make_row_keyboard,
+    make_share_contact_keyboard,
+)
+from formbot.bot.utils.logger import get_logger
 
 UNIVERSITY_DEPARTMENT_PROMPT = "Please select your university department."
 UNIVERSITY_DEPARTMENT_STREAM_PROMPT = "Please select your stream."
@@ -26,12 +31,14 @@ PHONE_NUMBER_INVALID_PROMPT = "Invalid phone number. Please share a valid phone 
 EMAIL_PROMPT = "Please share your email."
 EMAIL_INVALID_PROMPT = "Invalid email. Please share a valid email."
 FINAL_MESSAGE = "Thank you for sharing your information."
+SERVICE_DEPARTMENT_PROMPT = "Please share your service class."
+
+LOG = get_logger()
 
 
 class FifthYear2024FormHandler(FormHandler):
-    def __init__(self, bot: AsyncTeleBot, form_name: str) -> None:
+    def __init__(self, bot: TeleBot, form_name: str) -> None:
         super().__init__(bot, form_name)
-        self._service = FormService()
 
     def start(self) -> None:
         return self.register()
@@ -60,48 +67,50 @@ class FifthYear2024FormHandler(FormHandler):
             content_types=["contact"],
         )
         self.register_handler(
+            self._service_department,
+            state=FormStates.waiting_for_service_department,
+        )
+        self.register_handler(
             self._email,
             state=FormStates.waiting_for_email,
         )
 
-    async def _init(self, message: Message, state: StateContext) -> None:
+    def _init(self, message: Message, state: StateContext) -> None:
         cid = message.chat.id
 
-        await state.set(FormStates.waiting_for_university_department)
-        await self.send_message(
+        state.set(FormStates.waiting_for_university_department)
+        self.send_message(
             cid,
             UNIVERSITY_DEPARTMENT_PROMPT,
             make_row_keyboard(get_department_names(), items_per_row=1),
         )
 
-    async def _university_department(
-        self, message: Message, state: StateContext
-    ) -> None:
+    def _university_department(self, message: Message, state: StateContext) -> None:
         cid, department = message.chat.id, message.text
 
         assert department is not None
-        await state.add_data(department=department)
+        state.add_data(department=department)
 
-        await state.set(FormStates.waiting_for_name)
-        await self.send_message(
+        state.set(FormStates.waiting_for_name)
+        self.send_message(
             cid,
             FULL_NAME_PROMPT,
         )
 
-    async def _name(self, message: Message, state: StateContext) -> None:
+    def _name(self, message: Message, state: StateContext) -> None:
         cid, name = message.chat.id, message.text
         assert name is not None
 
-        await state.add_data(name=name)
+        state.add_data(name=name)
 
-        await state.set(FormStates.waiting_for_phone_number)
-        await self.send_message(
+        state.set(FormStates.waiting_for_phone_number)
+        self.send_message(
             cid,
             PHONE_NUMBER_PROMPT,
             reply_markup=make_share_contact_keyboard("Share your contact"),
         )
 
-    async def _phone(self, message: Message, state: StateContext) -> None:
+    def _phone(self, message: Message, state: StateContext) -> None:
         cid = message.chat.id
 
         phone = None
@@ -112,45 +121,65 @@ class FifthYear2024FormHandler(FormHandler):
             phone = message.text
 
         if phone is not None:
-            await state.add_data(phone_number=standardize_phone_number(phone))
+            state.add_data(phone_number=standardize_phone_number(phone))
 
-            await state.set(FormStates.waiting_for_email)
-            await self.send_message(
+            state.set(FormStates.waiting_for_service_department)
+            self.send_message(
                 cid,
-                EMAIL_PROMPT,
+                SERVICE_DEPARTMENT_PROMPT,
+                make_column_keyboard(SERVICE_DEPARTMENTS),
             )
         else:
-            await self.send_message(
+            self.send_message(
                 cid,
                 PHONE_NUMBER_INVALID_PROMPT,
                 reply_markup=make_share_contact_keyboard("Share your contact"),
             )
 
-    async def _email(self, message: Message, state: StateContext) -> None:
+    def _service_department(self, message: Message, state: StateContext) -> None:
+        cid = message.chat.id
+
+        department = message.text
+        assert department is not None
+
+        if department not in SERVICE_DEPARTMENTS:
+            self.send_message(cid, SERVICE_DEPARTMENT_PROMPT)
+            return
+
+        state.add_data(service_department=department)
+        state.set(FormStates.waiting_for_email)
+        self.send_message(
+            cid,
+            EMAIL_PROMPT,
+        )
+
+    def _email(self, message: Message, state: StateContext) -> None:
         cid, email = message.chat.id, message.text
 
         assert email is not None
 
         if not is_valid_email(email):
-            await self.send_message(cid, EMAIL_INVALID_PROMPT)
+            self.send_message(cid, EMAIL_INVALID_PROMPT)
             return
 
-        async with state.data() as data:  # type: ignore
-            self.finalize(
-                {
-                    "name": data.get("name"),
-                    "phone_number": data.get("phone_number"),
-                    "email": email,
-                    "department": data.get("department"),
-                    "stream": data.get("stream", "-"),
-                    "section": data.get("section", "-"),
-                }
-            )
-            await state.set(BotState.init)
-            await self.send_message(
-                cid,
-                FINAL_MESSAGE,
-            )
+        with state.data() as data:  # type: ignore
+            student: Student = {
+                "name": data.get("name"),
+                "phone_number": data.get("phone_number"),
+                "email": email,
+                "department": data.get("department"),
+                "stream": data.get("stream", "-"),
+                "section": data.get("section", "-"),
+                "service_department": data.get("service_department"),
+            }
 
-    def finalize(self, student: Student) -> None:
-        self._service.insert(student)
+        service = FormService()
+        service.insert(student)
+        LOG.info(f"Inserted student: {student}")
+
+        state.add_data(registered=True)
+        state.set(BotState.init)
+        self.send_message(
+            cid,
+            FINAL_MESSAGE,
+        )

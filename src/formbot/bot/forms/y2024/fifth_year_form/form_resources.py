@@ -1,19 +1,33 @@
-from typing import Annotated, NotRequired, TypedDict
+from typing import Annotated, TypedDict
 
 Section = Annotated[str, "Section"]
+
+SERVICE_DEPARTMENTS = [
+    "ጽህፈት ቤት",
+    "ሰንበት ኦዲት እና ኢንስፔሽን ክፍል",
+    "አባላት እንክብካቤ ምክክር እና አቅም ማጎልበቻ",
+    "ትምህርት ክፍል",
+    "ሙያ እና በጎ አድራጎት ክፍል",
+    "ባች እና መርሐ ግብራት ማስተባበሪያ ክፍል",
+    "መዝሙር እና ሥነ-ጥበባት ክፍል",
+    "ልማት እና ገቢ አሰባሰብ ክፍል",
+    "ሒሳብ እና ንብረት ክፍል",
+    "እቅድ ክትትል ሪፖርት እና መረጃ ማደራጃ ክፍል",
+    "ቋንቋ እና ልዩ ፍላጎት ክፍል",
+]
 
 
 class Stream(TypedDict):
     name: str
-    abbreviation: NotRequired[str]
-    sections: NotRequired[list[Section]]
+    abbreviation: str
+    sections: list[Section]
 
 
 class Department(TypedDict):
     name: str
     abbreviation: str
-    sections: NotRequired[list[Section]]
-    streams: NotRequired[list[Stream]]
+    sections: list[Section]
+    streams: list[Stream]
 
 
 class Student(TypedDict):
@@ -21,11 +35,12 @@ class Student(TypedDict):
     phone_number: str
     email: str
     department: str
-    stream: NotRequired[str]
+    stream: str
     section: str
+    service_department: str
 
 
-DEPARTMENTS: list[Department] = [
+DEPARTMENTS: list[Department] = [  # type: ignore
     {
         "name": "School of Information Technology and Engineering",
         "abbreviation": "SITE",
