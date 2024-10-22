@@ -5,6 +5,7 @@ from telebot.types import Update
 
 from config import Settings
 from formbot.bot.forms.y2024.fifth_year_form import FifthYear2024FormHandler
+from formbot.bot.forms.y2024.third_year_form import ThirdYear2024FormHandler
 from formbot.bot.init_handler import InitHandler
 
 
@@ -19,6 +20,7 @@ class Bot:
 
         self._form_handlers = [
             FifthYear2024FormHandler(self._bot, "Fifth Year 2024 Form"),
+            ThirdYear2024FormHandler(self._bot, "Third Year 2024 Form"),
         ]
         self._init_handler = InitHandler(
             self._bot,
